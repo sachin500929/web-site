@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Yayamulla{% endblock %}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        header {
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+        
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        nav .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 2rem;
+        }
+        
+        nav a {
+            color: white;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        nav a:hover {
+            color: #667eea;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        
+        .alert {
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 5px;
+            animation: slideIn 0.3s ease-in;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-danger {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        footer {
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            text-align: center;
+            padding: 2rem;
+            margin-top: 3rem;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">🎉 Yayamulla</div>
+            <ul>
+                {% if current_user.is_authenticated %}
+                    <li><a href="{{ url_for('index') }}">Home</a></li>
+                    <li><a href="{{ url_for('events') }}">Events</a></li>
+                    {% if current_user.is_admin %}
+                        <li><a href="{{ url_for('admin_dashboard') }}">Admin</a></li>
+                    {% endif %}
+                    <li><a href="{{ url_for('logout') }}">Logout ({{ current_user.username }})</a></li>
+                {% else %}
+                    <li><a href="{{ url_for('login') }}">Login</a></li>
+                    <li><a href="{{ url_for('register') }}">Register</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer>
+        <p>&copy; 2026 Yayamulla. All rights reserved.</p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>{% extends "base.html" %}
+
+{% block title %}Login - Yayamulla{% endblock %}
+
+{% block extra_css %}
+<style>
+    .auth-container {
+        max-width: 400px;
+        margin: 3rem auto;
+        background: white;
+        padding: 2rem;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    .auth-container h2 {
+        margin-bottom: 1.5rem;
+        text-align: center;
+        color: #667eea;
+    }
+    
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+    }
+    
+    input[type="text"],
+    input[type="email"],
+    input[type="password"] {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 1rem;
+        transition: border-color 0.3s;
+    }
+    
+    input[type="text"]:focus,
+    input[type="email"]:focus,
+    input[type="password"]:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+    }
+    
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .checkbox-group input {
+        width: auto;
+    }
+    
+    button {
+        width: 100%;
+        padding: 0.75rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    .link-text {
+        text-align: center;
+        margin-top: 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .link-text a {
+        color: #667eea;
+        text-decoration: none;
+    }
+    
+    .link-text a:hover {
+        text-decoration: underline;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <h2>Login</h2>
+    <form method="POST">
+        <div class="form-group">
+            <label for="login_input">Username or Email</label>
+            <input type="text" id="login_input" name="login_input" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        
+        <div class="form-group checkbox-group">
+            <input type="checkbox" id="remember" name="remember">
+            <label for="remember">Remember me</label>
+        </div>
+        
+        <button type="submit">Login</button>
+        
+        <div class="link-text">
+            Don't have an account? <a href="{{ url_for('register') }}">Register here</a>
+        </div>
+    </form>
+</div>
+{% endblock %}{% extends "base.html" %}
+
+{% block title %}Register - Yayamulla{% endblock %}
+
+{% block extra_css %}
+<style>
+    .auth-container {
+        max-width: 400px;
+        margin: 3rem auto;
+        background: white;
+        padding: 2rem;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    .auth-container h2 {
+        margin-bottom: 1.5rem;
+        text-align: center;
+        color: #667eea;
+    }
+    
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+    }
+    
+    input[type="text"],
+    input[type="email"],
+    input[type="password"] {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 1rem;
+        transition: border-color 0.3s;
+    }
+    
+    input[type="text"]:focus,
+    input[type="email"]:focus,
+    input[type="password"]:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+    }
+    
+    button {
+        width: 100%;
+        padding: 0.75rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    .link-text {
+        text-align: center;
+        margin-top: 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .link-text a {
+        color: #667eea;
+        text-decoration: none;
+    }
+    
+    .link-text a:hover {
+        text-decoration: underline;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <h2>Create Account</h2>
+    <form method="POST">
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        
+        <button type="submit">Register</button>
+        
+        <div class="link-text">
+            Already have an account? <a href="{{ url_for('login') }}">Login here</a>
+        </div>
+    </form>
+</div>
+{% endblock %}{% extends "base.html" %}
+
+{% block title %}Home - Yayamulla{% endblock %}
+
+{% block extra_css %}
+<style>
+    .create-post {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .create-post h3 {
+        margin-bottom: 1rem;
+        color: #667eea;
+    }
+    
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    textarea,
+    input[type="file"] {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-family: inherit;
+        font-size: 1rem;
+    }
+    
+    textarea:focus,
+    input[type="file"]:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+    
+    button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: transform 0.2s;
+    }
+    
+    button:hover {
+        transform: translateY(-2px);
+    }
+    
+    .posts-container {
+        display: grid;
+        gap: 1.5rem;
+    }
+    
+    .post {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .post-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 0.5rem;
+    }
+    
+    .post-author {
+        font-weight: 600;
+        color: #667eea;
+    }
+    
+    .post-timestamp {
+        font-size: 0.85rem;
+        color: #999;
+    }
+    
+    .post-delete {
+        color: #dc3545;
+        cursor: pointer;
+        font-size: 0.9rem;
+        background: none;
+        border: none;
+    }
+    
+    .post-delete:hover {
+        text-decoration: underline;
+    }
+    
+    .post-content {
+        margin: 1rem 0;
+        line-height: 1.6;
+    }
+    
+    .post-media {
+        margin: 1rem 0;
+    }
+    
+    .post-media img,
+    .post-media video {
+        max-width: 100%;
+        height: auto;
+        border-radius: 5px;
+    }
+    
+    .post-actions {
+        display: flex;
+        gap: 1rem;
+        margin: 1rem 0;
+        padding-top: 1rem;
+        border-top: 1px solid #eee;
+    }
+    
+    .reaction-btn {
+        background: #f0f0f0;
+        border: 1px solid #ddd;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .reaction-btn:hover {
+        background: #667eea;
+        color: white;
+    }
+    
+    .reaction-btn.active {
+        background: #667eea;
+        color: white;
+    }
+    
+    .reaction-counts {
+        display: flex;
+        gap: 1rem;
+        margin-top: 0.5rem;
+        font-size: 0.9rem;
+        color: #666;
+    }
+    
+    .comments-section {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #eee;
+    }
+    
+    .comment {
+        background: #f9f9f9;
+        padding: 0.75rem;
+        border-radius: 5px;
+        margin: 0.5rem 0;
+        font-size: 0.95rem;
+    }
+    
+    .comment-author {
+        font-weight: 600;
+        color: #667eea;
+    }
+    
+    .comment-form {
+        margin-top: 1rem;
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .comment-form input {
+        flex: 1;
+        padding: 0.5rem;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+    }
+    
+    .comment-form button {
+        padding: 0.5rem 1rem;
+    }
+    
+    .empty-message {
+        text-align: center;
+        padding: 2rem;
+        color: #999;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="create-post">
+    <h3>Create a Post</h3>
+    <form method="POST" action="{{ url_for('create_post') }}" enctype="multipart/form-data">
+        <div class="form-group">
+            <textarea name="content" placeholder="What's on your mind?" rows="4"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="file">Attach Media (Image, Video, or Document)</label>
+            <input type="file" id="file" name="file" accept="image/*,video/*,.pdf,.doc,.docx,.txt,.xlsx,.xls,.ppt,.pptx,.zip">
+        </div>
+        
+        <button type="submit">Post</button>
+    </form>
+</div>
+
+{% if posts %}
+    <div class="posts-container">
+        {% for post in posts %}
+            <div class="post">
+                <div class="post-header">
+                    <div>
+                        <span class="post-author">{{ post.author.username }}</span>
+                        <span class="post-timestamp">{{ post.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                    </div>
+                    {% if post.author == current_user or current_user.is_admin %}
+                        <form method="POST" action="{{ url_for('delete_post', post_id=post.id) }}" style="display: inline;">
+                            <button type="submit" class="post-delete" onclick="return confirm('Delete this post?')">Delete</button>
+                        </form>
+                    {% endif %}
+                </div>
+                
+                {% if post.content %}
+                    <div class="post-content">{{ post.content }}</div>
+                {% endif %}
+                
+                {% if post.media_filename %}
+                    <div class="post-media">
+                        {% if post.media_type == 'image' %}
+                            <img src="{{ url_for('uploaded_file', filename=post.media_filename) }}" alt="Post image">
+                        {% elif post.media_type == 'video' %}
+                            <video controls>
+                                <source src="{{ url_for('uploaded_file', filename=post.media_filename) }}" type="video/mp4">
+                            </video>
+                        {% else %}
+                            <a href="{{ url_for('uploaded_file', filename=post.media_filename) }}" target="_blank">📄 Download File</a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+                
+                <div class="post-actions">
+                    <button class="reaction-btn" onclick="toggleReaction({{ post.id }}, 'like')">👍 Like</button>
+                    <button class="reaction-btn" onclick="toggleReaction({{ post.id }}, 'heart')">❤️ Heart</button>
+                    <button class="reaction-btn" onclick="toggleReaction({{ post.id }}, 'sad')">😢 Sad</button>
+                </div>
+                
+                <div class="reaction-counts" id="counts-{{ post.id }}">
+                    <span id="likes-{{ post.id }}">👍 {{ post.likes|selectattr('reaction_type', 'equalto', 'like')|list|length }}</span>
+                    <span id="hearts-{{ post.id }}">❤️ {{ post.likes|selectattr('reaction_type', 'equalto', 'heart')|list|length }}</span>
+                    <span id="sads-{{ post.id }}">😢 {{ post.likes|selectattr('reaction_type', 'equalto', 'sad')|list|length }}</span>
+                </div>
+                
+                <div class="comments-section">
+                    <h4>Comments</h4>
+                    <div id="comments-{{ post.id }}">
+                        {% for comment in post.comments %}
+                            <div class="comment">
+                                <span class="comment-author">{{ comment.author.username }}</span>
+                                <span class="comment-timestamp" style="color: #999; font-size: 0.85rem;">{{ comment.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                                <p>{{ comment.content }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="comment-form">
+                        <input type="text" id="comment-input-{{ post.id }}" placeholder="Add a comment...">
+                        <button type="button" onclick="submitComment({{ post.id }})">Send</button>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-message">
+        <p>No posts yet. Be the first to share something! 🎉</p>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script>
+    const socket = io();
+    
+    function toggleReaction(postId, reactionType) {
+        fetch(`/react/${postId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ reaction_type: reactionType })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById(`likes-${postId}`).textContent = `👍 ${data.likes_count}`;
+                document.getElementById(`hearts-${postId}`).textContent = `❤️ ${data.hearts_count}`;
+                document.getElementById(`sads-${postId}`).textContent = `😢 ${data.sads_count}`;
+            }
+        });
+    }
+    
+    function submitComment(postId) {
+        const input = document.getElementById(`comment-input-${postId}`);
+        const content = input.value.trim();
+        
+        if (content) {
+            socket.emit('new_comment', {
+                post_id: postId,
+                content: content
+            });
+            input.value = '';
+        }
+    }
+    
+    socket.on('receive_comment', function(data) {
+        const commentDiv = document.getElementById(`comments-${data.post_id}`);
+        if (commentDiv) {
+            const comment = document.createElement('div');
+            comment.className = 'comment';
+            comment.innerHTML = `
+                <span class="comment-author">${data.username}</span>
+                <span class="comment-timestamp" style="color: #999; font-size: 0.85rem;">${data.timestamp}</span>
+                <p>${data.content}</p>
+            `;
+            commentDiv.appendChild(comment);
+        }
+    });
+</script>
+{% endblock %}{% extends "base.html" %}
+
+{% block title %}Events - Yayamulla{% endblock %}
+
+{% block extra_css %}
+<style>
+    .create-event {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .create-event h3 {
+        margin-bottom: 1rem;
+        color: #667eea;
+    }
+    
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+    
+    @media (max-width: 768px) {
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+    }
+    
+    input,
+    textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-family: inherit;
+        font-size: 1rem;
+    }
+    
+    input:focus,
+    textarea:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+    
+    button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: transform 0.2s;
+    }
+    
+    button:hover {
+        transform: translateY(-2px);
+    }
+    
+    .events-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .event-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+    
+    .event-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+    }
+    
+    .event-card h4 {
+        color: #667eea;
+        margin-bottom: 0.5rem;
+    }
+    
+    .event-meta {
+        display: flex;
+        gap: 1rem;
+        margin: 0.5rem 0;
+        font-size: 0.9rem;
+        color: #666;
+    }
+    
+    .event-description {
+        margin: 1rem 0;
+        line-height: 1.5;
+    }
+    
+    .event-poster {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        border-radius: 5px;
+        margin: 1rem 0;
+    }
+    
+    .event-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+    
+    .event-actions a,
+    .event-actions button {
+        flex: 1;
+        padding: 0.5rem;
+        text-align: center;
+        border-radius: 5px;
+        text-decoration: none;
+        font-size: 0.9rem;
+    }
+    
+    .download-btn {
+        background: #28a745;
+        color: white;
+        border: none;
+        cursor: pointer;
+    }
+    
+    .download-btn:hover {
+        background: #218838;
+    }
+    
+    .delete-btn {
+        background: #dc3545;
+        color: white;
+        border: none;
+        cursor: pointer;
+    }
+    
+    .delete-btn:hover {
+        background: #c82333;
+    }
+    
+    .empty-message {
+        text-align: center;
+        padding: 2rem;
+        color: #999;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="create-event">
+    <h3>📅 Schedule an Event</h3>
+    <form method="POST" action="{{ url_for('create_event') }}" enctype="multipart/form-data">
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="title">Event Title *</label>
+                <input type="text" id="title" name="title" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="event_date">Date *</label>
+                <input type="date" id="event_date" name="event_date" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="event_time">Time *</label>
+                <input type="time" id="event_time" name="event_time" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="poster">Event Poster (Image)</label>
+                <input type="file" id="poster" name="poster" accept="image/*">
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" name="description" rows="4" placeholder="Event details..."></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="document">Document/PDF</label>
+            <input type="file" id="document" name="document" accept=".pdf,.doc,.docx,.txt,.xlsx,.xls,.ppt,.pptx">
+        </div>
+        
+        <button type="submit">Create Event</button>
+    </form>
+</div>
+
+{% if events %}
+    <div class="events-container">
+        {% for event in events %}
+            <div class="event-card">
+                <h4>{{ event.title }}</h4>
+                
+                <div class="event-meta">
+                    <span>📅 {{ event.event_date.strftime('%Y-%m-%d') }}</span>
+                    <span>⏰ {{ event.event_time.strftime('%H:%M') }}</span>
+                </div>
+                
+                {% if event.poster_filename %}
+                    <img src="{{ url_for('uploaded_file', filename=event.poster_filename) }}" alt="Event poster" class="event-poster">
+                {% endif %}
+                
+                {% if event.description %}
+                    <div class="event-description">{{ event.description }}</div>
+                {% endif %}
+                
+                <div class="event-actions">
+                    {% if event.document_filename %}
+                        <a href="{{ url_for('uploaded_file', filename=event.document_filename) }}" class="download-btn" target="_blank">📥 Download</a>
+                    {% endif %}
+                    
+                    {% if event.user_id == current_user.id or current_user.is_admin %}
+                        <form method="POST" action="{{ url_for('delete_event', event_id=event.id) }}" style="flex: 1;">
+                            <button type="submit" class="delete-btn" onclick="return confirm('Delete this event?')">🗑️ Delete</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-message">
+        <p>No events scheduled yet. Create one to get started! 📅</p>
+    </div>
+{% endif %}
+{% endblock %}{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Yayamulla{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-header {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin: 1rem 0;
+    }
+    
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        text-align: center;
+    }
+    
+    .stat-card h3 {
+        margin: 0;
+        font-size: 2rem;
+    }
+    
+    .stat-card p {
+        margin: 0.5rem 0 0 0;
+        opacity: 0.9;
+    }
+    
+    .qrcode-section {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .qrcode-section h3 {
+        color: #667eea;
+        margin-bottom: 1rem;
+    }
+    
+    .qrcode-container {
+        text-align: center;
+    }
+    
+    .qrcode-container img {
+        border: 1px solid #ddd;
+        padding: 1rem;
+        border-radius: 10px;
+    }
+    
+    .qrcode-url {
+        margin-top: 1rem;
+        padding: 1rem;
+        background: #f0f0f0;
+        border-radius: 5px;
+        word-break: break-all;
+    }
+    
+    .section {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .section h3 {
+        color: #667eea;
+        margin-bottom: 1rem;
+        border-bottom: 2px solid #667eea;
+        padding-bottom: 0.5rem;
+    }
+    
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+    }
+    
+    th, td {
+        padding: 0.75rem;
+        text-align: left;
+        border-bottom: 1px solid #eee;
+    }
+    
+    th {
+        background: #f9f9f9;
+        font-weight: 600;
+        color: #667eea;
+    }
+    
+    tr:hover {
+        background: #f9f9f9;
+    }
+    
+    .delete-btn {
+        background: #dc3545;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 0.9rem;
+    }
+    
+    .delete-btn:hover {
+        background: #c82333;
+    }
+    
+    .user-badge {
+        display: inline-block;
+        background: #667eea;
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+    }
+    
+    .user-badge.admin {
+        background: #ffc107;
+        color: black;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-header">
+    <h2>⚙️ Admin Dashboard</h2>
+    
+    <div class="stats">
+        <div class="stat-card">
+            <h3>{{ users|length }}</h3>
+            <p>Total Users</p>
+        </div>
+        <div class="stat-card">
+            <h3>{{ posts|length }}</h3>
+            <p>Total Posts</p>
+        </div>
+    </div>
+</div>
+
+<div class="qrcode-section">
+    <h3>📱 Network Access QR Code</h3>
+    <div class="qrcode-container">
+        <img src="{{ url_for('generate_qrcode') }}" alt="QR Code">
+        <div class="qrcode-url">
+            <strong>LAN URL:</strong> {{ lan_ip_url }}
+        </div>
+    </div>
+</div>
+
+<div class="section">
+    <h3>👥 Users</h3>
+    {% if users %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                    <tr>
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>
+                            {% if user.is_admin %}
+                                <span class="user-badge admin">Admin</span>
+                            {% else %}
+                                <span class="user-badge">User</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if not user.is_admin %}
+                                <form method="POST" action="{{ url_for('delete_user', user_id=user.id) }}" style="display: inline;">
+                                    <button type="submit" class="delete-btn" onclick="return confirm('Delete this user?')">Delete</button>
+                                </form>
+                            {% else %}
+                                <span style="color: #999;">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No users found.</p>
+    {% endif %}
+</div>
+
+<div class="section">
+    <h3>📝 Posts</h3>
+    {% if posts %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Author</th>
+                    <th>Content</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for post in posts %}
+                    <tr>
+                        <td>{{ post.author.username }}</td>
+                        <td>{{ (post.content or '(No text)')[:50] }}</td>
+                        <td>{{ post.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>
+                            <form method="POST" action="{{ url_for('delete_post', post_id=post.id) }}" style="display: inline;">
+                                <button type="submit" class="delete-btn" onclick="return confirm('Delete this post?')">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No posts found.</p>
+    {% endif %}
+</div>
+{% endblock %}document.addEventListener('DOMContentLoaded', function() {
+    // Auto-close alerts after 5 seconds
+    const alerts = document.querySelectorAll('.alert');
+    alerts.forEach(alert => {
+        setTimeout(() => {
+            alert.style.opacity = '0';
+            alert.style.transition = 'opacity 0.3s ease-out';
+            setTimeout(() => alert.remove(), 300);
+        }, 5000);
+    });
+});
